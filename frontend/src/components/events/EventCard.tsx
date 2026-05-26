@@ -31,15 +31,23 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onDelete, showActio
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-all"
+      className="cursor-pointer overflow-hidden transition-colors hover:border-primary/25 hover:bg-accent/25"
       onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          handleCardClick()
+        }
+      }}
     >
       {event.image && (
-        <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden rounded-t-lg">
+        <div className="h-40 w-full overflow-hidden bg-secondary">
           <img
             src={event.image}
             alt={event.title}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none'
             }}
@@ -48,8 +56,8 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onDelete, showActio
       )}
 
       <CardHeader className="pb-3">
-        <h3 className="font-semibold text-base truncate">{event.title}</h3>
-        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{event.description}</p>
+        <h3 className="truncate text-base font-semibold">{event.title}</h3>
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{event.description}</p>
       </CardHeader>
 
       <CardContent className="space-y-3">
@@ -72,7 +80,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onDelete, showActio
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2 border-t border-border">
+        <div className="flex gap-2 border-t border-border pt-2">
           <Button
             variant="default"
             size="sm"
@@ -83,10 +91,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onDelete, showActio
           </Button>
           {showActions && onDelete && (
             <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-            >
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            aria-label={`Delete ${event.title}`}
+          >
               Delete
             </Button>
           )}

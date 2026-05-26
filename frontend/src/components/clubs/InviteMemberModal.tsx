@@ -59,8 +59,8 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-4" role="presentation">
+      <Card className="w-full max-w-md shadow-lg" role="dialog" aria-modal="true" aria-label="Invite member">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <CardTitle>Invite Member</CardTitle>
@@ -70,7 +70,8 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-6 w-6"
+            className="h-8 w-8"
+            aria-label="Close invite modal"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -104,7 +105,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                className="h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
               >
                 <option value={UserRole.MEMBER}>Member</option>
                 <option value={UserRole.CLUB_ADMIN}>Admin</option>

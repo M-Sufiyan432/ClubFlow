@@ -12,7 +12,6 @@ export const Members: React.FC = () => {
   const dispatch = useAppDispatch()
   const members = useAppSelector((state) => state.members.members)
   const [showInviteForm, setShowInviteForm] = useState(false)
-  const [editingMember, setEditingMember] = useState<Member | null>(null)
 
   const handleInviteMember = (email: string, role: 'admin' | 'moderator' | 'member') => {
     const newMember: Member = {
@@ -34,8 +33,7 @@ export const Members: React.FC = () => {
     }
   }
 
-  const handleEditMember = (member: Member) => {
-    setEditingMember(member)
+  const handleEditMember = (_member: Member) => {
     // In a real app, you'd show an edit form here
   }
 
@@ -46,14 +44,14 @@ export const Members: React.FC = () => {
   return (
     <BaseLayout title="Members">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Member Management</h1>
             <p className="text-muted-foreground">
               Manage club members and invitations.
             </p>
           </div>
-          <Button onClick={() => setShowInviteForm(!showInviteForm)}>
+          <Button onClick={() => setShowInviteForm(!showInviteForm)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Invite Member
           </Button>

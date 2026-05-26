@@ -34,28 +34,28 @@ export const MemberRow: React.FC<MemberRowProps> = ({
   }
 
   const roleColor = {
-    [UserRole.SUPER_ADMIN]: 'text-red-500 bg-red-50',
-    [UserRole.CLUB_ADMIN]: 'text-blue-500 bg-blue-50',
-    [UserRole.MEMBER]: 'text-gray-500 bg-gray-50',
+    [UserRole.SUPER_ADMIN]: 'border-red-200 bg-red-50 text-red-700',
+    [UserRole.CLUB_ADMIN]: 'border-blue-200 bg-blue-50 text-blue-700',
+    [UserRole.MEMBER]: 'border-border bg-secondary text-muted-foreground',
   }
 
   return (
-    <div className="flex items-center justify-between p-4 hover:bg-secondary/50 rounded-lg transition-colors">
-      <div className="flex items-center gap-3 flex-1">
-        <Avatar className="h-10 w-10">
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Avatar className="h-10 w-10 rounded-md">
           <AvatarImage src={member.avatar} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-medium">{member.name}</p>
+            <p className="truncate font-medium">{member.name}</p>
             {isOwner && <Crown className="h-4 w-4 text-amber-500" />}
           </div>
-          <p className="text-sm text-muted-foreground">{member.email}</p>
+          <p className="truncate text-sm text-muted-foreground">{member.email}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:justify-end">
         {canManage && !isOwner ? (
           <div className="relative">
             <Button
@@ -64,14 +64,14 @@ export const MemberRow: React.FC<MemberRowProps> = ({
               onClick={() => setShowRoleMenu(!showRoleMenu)}
               className="gap-2"
             >
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColor[member.role]}`}>
+              <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${roleColor[member.role]}`}>
                 {roleLabel[member.role]}
               </span>
               <ChevronDown className="h-4 w-4" />
             </Button>
 
             {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-40">
+              <div className="absolute right-0 z-40 mt-2 w-48 overflow-hidden rounded-lg border border-border bg-popover shadow-md">
                 {Object.values(UserRole).map((role) => (
                   <button
                     key={role}
@@ -79,7 +79,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
                       onRoleChange(member.id, role)
                       setShowRoleMenu(false)
                     }}
-                    className={`w-full text-left px-4 py-2 hover:bg-secondary text-sm ${
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-secondary ${
                       member.role === role ? 'bg-secondary' : ''
                     }`}
                   >
@@ -90,7 +90,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
             )}
           </div>
         ) : (
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${roleColor[member.role]}`}>
+          <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${roleColor[member.role]}`}>
             {roleLabel[member.role]}
           </span>
         )}
@@ -101,6 +101,7 @@ export const MemberRow: React.FC<MemberRowProps> = ({
             size="sm"
             onClick={() => onRemove(member.id)}
             className="text-destructive hover:text-destructive"
+            aria-label={`Remove ${member.name}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

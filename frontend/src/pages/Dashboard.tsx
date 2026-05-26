@@ -28,7 +28,6 @@ import {
   Clock3,
   FolderKanban,
   Shield,
-  Users,
 } from 'lucide-react'
 import {
   Bar,
@@ -84,9 +83,9 @@ const formatDate = (value?: string) =>
 const percent = (value: number) => `${Math.round(value)}%`
 
 const EmptyState: React.FC<{ title: string; description: string }> = ({ title, description }) => (
-  <Card className="border border-dashed border-slate-200 bg-white/70 shadow-none dark:border-white/10 dark:bg-slate-900/40">
+  <Card className="border-dashed bg-card shadow-none">
     <CardContent className="py-10 text-center">
-      <h3 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h3>
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </CardContent>
   </Card>
@@ -110,12 +109,12 @@ const StatCard: React.FC<{
   }
 
   return (
-    <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+    <Card>
       <CardContent className="p-5">
-        <div className={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${tones[tone]}`}>
+        <div className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${tones[tone]}`}>
           {label}
         </div>
-        <p className="mt-4 text-3xl font-semibold text-slate-950 dark:text-white">{value}</p>
+        <p className="mt-4 text-3xl font-semibold text-foreground">{value}</p>
         <p className="mt-2 text-sm text-muted-foreground">{hint}</p>
       </CardContent>
     </Card>
@@ -123,7 +122,7 @@ const StatCard: React.FC<{
 }
 
 const TaskListCard: React.FC<{ title: string; description: string; tasks: Task[] }> = ({ title, description, tasks }) => (
-  <Card className="h-full border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+  <Card className="h-full">
     <CardHeader>
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
@@ -136,15 +135,15 @@ const TaskListCard: React.FC<{ title: string; description: string; tasks: Task[]
           {tasks.map((task) => (
             <div
               key={task.id}
-              className={`rounded-xl border p-4 ${
+              className={`rounded-lg border p-4 ${
                 task.isOverdue
                   ? 'border-rose-200 bg-rose-50/80 dark:border-rose-500/20 dark:bg-rose-950/20'
-                  : 'border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/5'
+                  : 'border-border bg-card'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="truncate font-semibold text-slate-900 dark:text-white">{task.title}</h3>
+                  <h3 className="truncate font-semibold text-foreground">{task.title}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{task.description || 'No description.'}</p>
                 </div>
                 <Badge variant={task.isOverdue ? 'destructive' : 'secondary'}>{task.status.replace('_', ' ')}</Badge>
@@ -163,7 +162,7 @@ const TaskListCard: React.FC<{ title: string; description: string; tasks: Task[]
 )
 
 const EventsCard: React.FC<{ title: string; description: string; events: Event[] }> = ({ title, description, events }) => (
-  <Card className="h-full border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+  <Card className="h-full">
     <CardHeader>
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
@@ -174,10 +173,10 @@ const EventsCard: React.FC<{ title: string; description: string; events: Event[]
       ) : (
         <div className={`space-y-3 ${scrollAreaClass}`}>
           {events.map((event) => (
-            <div key={event.id} className="rounded-xl border border-slate-200/70 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5">
+            <div key={event.id} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="truncate font-semibold text-slate-900 dark:text-white">{event.title}</h3>
+                  <h3 className="truncate font-semibold text-foreground">{event.title}</h3>
                   <p className="mt-1 text-sm text-muted-foreground">{event.location || 'Location not set'}</p>
                 </div>
                 <Badge variant="secondary">{formatDate(event.startDateTime)}</Badge>
@@ -195,7 +194,7 @@ const NotificationsCard: React.FC = () => {
   const { notifications, unreadCount, isFetching } = useAppSelector((state) => state.notifications)
 
   return (
-    <Card className="h-full border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -213,8 +212,8 @@ const NotificationsCard: React.FC = () => {
         ) : (
           <div className={`space-y-3 ${scrollAreaClass}`}>
             {notifications.map((notification) => (
-              <div key={notification.id} className={`rounded-xl border p-3 ${notification.isRead ? 'border-slate-200/70 dark:border-white/10' : 'border-sky-200 bg-sky-50/70 dark:border-sky-500/20 dark:bg-sky-950/20'}`}>
-                <p className="font-medium text-slate-900 dark:text-white">{notification.title}</p>
+              <div key={notification.id} className={`rounded-lg border p-3 ${notification.isRead ? 'border-border bg-card' : 'border-primary/20 bg-primary/10'}`}>
+                <p className="font-medium text-foreground">{notification.title}</p>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{notification.message}</p>
               </div>
             ))}
@@ -239,7 +238,7 @@ const TaskCharts: React.FC<{ analytics: TaskAnalytics | null }> = ({ analytics }
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+      <Card>
         <CardHeader>
           <CardTitle>Task Charts</CardTitle>
           <CardDescription>Status workflow: todo to in progress to review to completed.</CardDescription>
@@ -258,7 +257,7 @@ const TaskCharts: React.FC<{ analytics: TaskAnalytics | null }> = ({ analytics }
         </CardContent>
       </Card>
 
-      <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+      <Card>
         <CardHeader>
           <CardTitle>Priority Load</CardTitle>
           <CardDescription>High, medium, and low priority task distribution.</CardDescription>
@@ -287,7 +286,7 @@ const ProductivityCard: React.FC<{ productivity: PerformanceAnalytics | null; li
   const rows = limited ? productivity?.memberProductivity.slice(0, 5) || [] : productivity?.memberProductivity || []
 
   return (
-    <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+    <Card>
       <CardHeader>
         <CardTitle>{limited ? 'Productivity Snapshot' : 'Member Productivity'}</CardTitle>
         <CardDescription>{limited ? 'Limited task completion view.' : 'Assigned and completed task performance by member.'}</CardDescription>
@@ -296,7 +295,7 @@ const ProductivityCard: React.FC<{ productivity: PerformanceAnalytics | null; li
         {rows.length === 0 ? (
           <EmptyState title="No productivity data" description="Productivity appears after tasks are assigned and completed." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200/70 dark:border-white/10">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 dark:bg-white/5">
                 <tr className="text-left text-muted-foreground">
@@ -326,7 +325,7 @@ const ProductivityCard: React.FC<{ productivity: PerformanceAnalytics | null; li
 
 const AdminTables: React.FC<{ users: AdminUser[]; clubs: AdminClub[]; tasks: AdminTask[]; logs: AuditLog[] }> = ({ users, clubs, tasks, logs }) => (
   <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-    <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+      <Card>
       <CardHeader><CardTitle>System Stats</CardTitle><CardDescription>Latest users, clubs, and tasks.</CardDescription></CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -344,15 +343,15 @@ const AdminTables: React.FC<{ users: AdminUser[]; clubs: AdminClub[]; tasks: Adm
       </CardContent>
     </Card>
 
-    <Card className="border-white/40 bg-white/80 dark:border-white/10 dark:bg-slate-900/60">
+    <Card>
       <CardHeader><CardTitle>Audit Logs</CardTitle><CardDescription>Latest tracked system actions.</CardDescription></CardHeader>
       <CardContent className="space-y-3">
         {logs.length === 0 ? (
           <EmptyState title="No audit logs" description="System actions will appear here." />
         ) : (
           logs.slice(0, 10).map((log) => (
-            <div key={log.id} className="rounded-xl border border-slate-200/70 p-3 dark:border-white/10">
-              <p className="font-medium text-slate-900 dark:text-white">{log.action}</p>
+            <div key={log.id} className="rounded-lg border border-border bg-card p-3">
+              <p className="font-medium text-foreground">{log.action}</p>
               <p className="text-sm text-muted-foreground">{log.message || log.targetName}</p>
             </div>
           ))
@@ -488,7 +487,7 @@ export const Dashboard: React.FC = () => {
   const actionPanel = (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">What do I need to do?</h2>
+          <h2 className="text-xl font-semibold text-foreground">What do I need to do?</h2>
         <p className="mt-1 text-sm text-muted-foreground">Your tasks, overdue work, events, and notifications are always shown first.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -602,7 +601,7 @@ export const Dashboard: React.FC = () => {
               {dashboardKind === 'admin' ? <Shield className="h-3.5 w-3.5" /> : <FolderKanban className="h-3.5 w-3.5" />}
               {dashboardKind === 'admin' ? 'Admin' : clubRole || 'personal'} view
             </div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{pageTitle}</h1>
+            <h1 className="mt-3 text-3xl font-semibold text-foreground">{pageTitle}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {dashboardKind === 'admin'
                 ? 'System totals, health, and audit logs.'
@@ -621,7 +620,7 @@ export const Dashboard: React.FC = () => {
 
         <div className="flex items-center gap-2 border-t border-slate-200/70 pt-6 dark:border-white/10">
           {dashboardKind === 'admin' ? <Shield className="h-5 w-5 text-slate-500" /> : <BarChart3 className="h-5 w-5 text-slate-500" />}
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Role View</h2>
+          <h2 className="text-xl font-semibold text-foreground">Role View</h2>
         </div>
 
         {roleContent()}

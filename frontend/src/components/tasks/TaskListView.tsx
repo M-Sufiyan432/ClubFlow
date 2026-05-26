@@ -15,7 +15,7 @@ const getPriorityColor = (priority: string) => {
     case 'high':
       return 'text-orange-600'
     case 'medium':
-      return 'text-yellow-600'
+      return 'text-amber-600'
     case 'low':
       return 'text-green-600'
     default:
@@ -25,28 +25,37 @@ const getPriorityColor = (priority: string) => {
 
 const getStatusBadge = (status: TaskStatus) => {
   const statusMap = {
-    [TaskStatus.TODO]: 'bg-slate-100 text-slate-800',
-    [TaskStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
-    [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-800',
-    [TaskStatus.DONE]: 'bg-green-100 text-green-800',
-    [TaskStatus.ARCHIVED]: 'bg-gray-100 text-gray-800',
+    [TaskStatus.TODO]: 'border-border bg-secondary text-muted-foreground',
+    [TaskStatus.IN_PROGRESS]: 'border-blue-200 bg-blue-50 text-blue-700',
+    [TaskStatus.IN_REVIEW]: 'border-violet-200 bg-violet-50 text-violet-700',
+    [TaskStatus.DONE]: 'border-green-200 bg-green-50 text-green-700',
+    [TaskStatus.ARCHIVED]: 'border-border bg-secondary text-muted-foreground',
   }
-  return statusMap[status] || 'bg-gray-100 text-gray-800'
+  return statusMap[status] || 'border-border bg-secondary text-muted-foreground'
 }
 
 export const TaskListView: React.FC<TaskListViewProps> = ({ tasks, onTaskClick }) => {
   return (
     <div className="min-w-0 space-y-2">
       {tasks.length === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-muted-foreground">No tasks found</p>
+        <Card className="border-dashed p-8 text-center">
+          <p className="text-sm font-medium">No tasks found</p>
+          <p className="mt-1 text-sm text-muted-foreground">Tasks matching this view will appear here.</p>
         </Card>
       ) : (
         tasks.map(task => (
           <Card
             key={task.id}
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer transition-colors hover:border-primary/25 hover:bg-accent/25"
             onClick={() => onTaskClick(task)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onTaskClick(task)
+              }
+            }}
           >
             <CardContent className="p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -75,7 +84,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ tasks, onTaskClick }
                     )}
                   </div>
 
-                  <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${getStatusBadge(task.status)}`}>
+                  <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusBadge(task.status)}`}>
                     {task.status.replace('_', ' ')}
                   </span>
 
@@ -84,14 +93,14 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ tasks, onTaskClick }
                       {task.assignees.slice(0, 2).map(assignee => (
                         <div
                           key={assignee.id}
-                          className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold"
+                          className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground"
                           title={assignee.name}
                         >
                           {assignee.name.charAt(0)}
                         </div>
                       ))}
                       {task.assignees.length > 2 && (
-                        <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-secondary text-xs font-bold text-secondary-foreground">
                           +{task.assignees.length - 2}
                         </div>
                       )}
@@ -103,21 +112,21 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ tasks, onTaskClick }
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2.5 py-1">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1">
                     <Layers3 className="h-3.5 w-3.5" />
                     {task.subtasks.length} subtasks
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2.5 py-1">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1">
                     <Clock3 className="h-3.5 w-3.5" />
                     {task.estimatedHours ? `${task.estimatedHours}h est.` : 'No estimate'}
                   </span>
                   {task.isRecurring && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2.5 py-1">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1">
                       <Repeat2 className="h-3.5 w-3.5" />
                       {task.recurringPattern}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2.5 py-1">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1">
                     {task.progress}% complete
                   </span>
                 </div>

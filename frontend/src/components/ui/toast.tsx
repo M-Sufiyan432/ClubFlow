@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { hideNotification } from '@/store/slices/uiSlice'
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react'
@@ -17,6 +17,7 @@ export const Toast = () => {
 
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [notification?.open, dispatch])
 
   if (!notification?.open) {
@@ -47,10 +48,10 @@ export const Toast = () => {
     },
     warning: {
       icon: AlertTriangle,
-      bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
-      textColor: 'text-yellow-900 dark:text-yellow-100',
-      borderColor: 'border-yellow-200 dark:border-yellow-800',
-      iconColor: 'text-yellow-600 dark:text-yellow-400',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+      textColor: 'text-amber-900 dark:text-amber-100',
+      borderColor: 'border-amber-200 dark:border-amber-800',
+      iconColor: 'text-amber-600 dark:text-amber-400',
     },
   }
 
@@ -58,19 +59,21 @@ export const Toast = () => {
   const IconComponent = config.icon
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-2">
+    <div className="fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] animate-slideInUp">
       <div
         className={`
-          flex items-start gap-3 p-4 rounded-lg border
+          flex max-w-md items-start gap-3 rounded-lg border p-4
           ${config.bgColor} ${config.textColor} ${config.borderColor}
-          shadow-lg max-w-md
+          shadow-lg
         `}
+        role="status"
       >
         <IconComponent className={`w-5 h-5 flex-shrink-0 mt-0.5 ${config.iconColor}`} />
         <p className="text-sm font-medium flex-1">{notification.message}</p>
         <button
           onClick={() => dispatch(hideNotification())}
-          className="flex-shrink-0 p-1 hover:bg-black/10 rounded transition-colors"
+          className="flex-shrink-0 rounded p-1 transition-colors hover:bg-black/10"
+          aria-label="Dismiss notification"
         >
           <X className="w-4 h-4" />
         </button>

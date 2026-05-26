@@ -49,7 +49,7 @@ export const Login: React.FC = () => {
     setIsLoading(true)
 
     try {
-      const result = await dispatch(login({ email, password })).unwrap()
+      await dispatch(login({ email, password })).unwrap()
       const from = (location.state as any)?.from?.pathname || '/dashboard'
       navigate(from)
     } catch (err) {

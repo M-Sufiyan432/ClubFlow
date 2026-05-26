@@ -303,7 +303,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
           {task.isRecurring && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-border/60 p-4">
+              <div className="rounded-lg border border-border bg-card p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Repeat2 className="h-4 w-4" />
                   <h3 className="font-semibold text-sm">Recurrence</h3>
@@ -315,7 +315,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
           )}
 
-          <div className="rounded-xl border border-border/70 bg-background/80 p-4">
+          <div className="rounded-lg border border-border bg-secondary/35 p-4">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -363,7 +363,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
 
             {task.subtasks.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed border-border bg-card px-4 py-5 text-sm text-muted-foreground">
                 No subtasks yet. Add the first small step to make progress easier to track.
               </div>
             ) : (
@@ -375,10 +375,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   return (
                     <div
                       key={subtask.id}
-                      className={`rounded-xl border px-3 py-3 transition ${
+                      className={`rounded-lg border px-3 py-3 transition-colors ${
                         subtask.completed
                           ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-950/20'
-                          : 'border-border bg-background'
+                          : 'border-border bg-card'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -519,7 +519,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       href={attachment.fileUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="group overflow-hidden rounded-xl border border-border/60 bg-background text-sm transition hover:border-primary/60 hover:shadow-sm"
+                      className="group overflow-hidden rounded-lg border border-border bg-card text-sm transition-colors hover:border-primary/50"
                     >
                       {isImage ? (
                         <img
@@ -546,7 +546,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-border/70 bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed border-border bg-card px-4 py-5 text-sm text-muted-foreground">
                 No proof attached yet.
               </div>
             )}
@@ -557,7 +557,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <h3 className="font-semibold text-sm mb-2">Dependencies</h3>
               <div className="space-y-2">
                 {task.dependencies.map((dependency) => (
-                  <div key={dependency.id} className="rounded-xl border border-border/60 px-3 py-2 text-sm text-muted-foreground">
+                  <div key={dependency.id} className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                     Blocked by task {dependency.dependsOnTaskId}
                   </div>
                 ))}
@@ -570,7 +570,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             <h3 className="font-semibold text-sm mb-3">Comments ({task.comments.length})</h3>
             <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
               {task.comments.map(comment => (
-                <div key={comment.id} className="bg-secondary/50 rounded-lg p-3">
+                <div key={comment.id} className="rounded-lg border border-border bg-secondary/45 p-3">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-medium">{comment.author.name}</p>
                     <span className="text-xs text-muted-foreground">
@@ -588,10 +588,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 type="text"
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleAddComment()}
+                onKeyDown={e => e.key === 'Enter' && handleAddComment()}
                 placeholder="Add a comment..."
                 disabled={isLoading}
-                className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-sm"
+                className="h-9 flex-1 rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
               />
               <Button
                 onClick={handleAddComment}
@@ -608,7 +608,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <h3 className="font-semibold text-sm mb-3">History</h3>
               <div className="space-y-2">
                 {task.editHistory.slice(0, 8).map((entry) => (
-                  <div key={entry.id} className="rounded-xl border border-border/60 px-3 py-2 text-sm">
+                  <div key={entry.id} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
                     <p className="font-medium">{entry.field}</p>
                     <p className="text-xs text-muted-foreground">
                       {entry.changedBy.name || 'System'} - {entry.changedAt ? new Date(entry.changedAt).toLocaleString() : ''}

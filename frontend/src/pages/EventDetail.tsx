@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { MapPin, Calendar, Users, Trash2, ArrowLeft } from 'lucide-react'
+import { RSVPStatus } from '@/types/index'
 
 export const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>()
@@ -16,7 +17,7 @@ export const EventDetail: React.FC = () => {
   const dispatch = useAppDispatch()
   const { currentEvent, isLoading } = useAppSelector((state) => state.events)
   const { user } = useAppSelector((state) => state.auth)
-  const [userRsvpStatus, setUserRsvpStatus] = useState<string | undefined>()
+  const [userRsvpStatus, setUserRsvpStatus] = useState<RSVPStatus | undefined>()
 
   useEffect(() => {
     if (eventId) {
@@ -27,7 +28,7 @@ export const EventDetail: React.FC = () => {
   useEffect(() => {
     if (currentEvent && user) {
       const userAttendee = currentEvent.attendees.find((a) => a.userId === user.id)
-      setUserRsvpStatus(userAttendee?.rsvpStatus)
+      setUserRsvpStatus(userAttendee?.rsvpStatus as RSVPStatus | undefined)
     }
   }, [currentEvent, user])
 
@@ -55,7 +56,7 @@ export const EventDetail: React.FC = () => {
   if (isLoading) {
     return (
       <BaseLayout title="Event">
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <p className="text-muted-foreground">Loading event details...</p>
       </div>
       </BaseLayout>
@@ -65,7 +66,7 @@ export const EventDetail: React.FC = () => {
   if (!currentEvent) {
     return (
       <BaseLayout title="Event">
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Event not found</p>
         <Button onClick={() => navigate(-1)}>Go Back</Button>
       </div>
@@ -81,9 +82,9 @@ export const EventDetail: React.FC = () => {
 
   return (
     <BaseLayout title={currentEvent.title}>
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -103,31 +104,31 @@ export const EventDetail: React.FC = () => {
 
       {/* Event Image */}
       {currentEvent.image && (
-        <div className="rounded-lg overflow-hidden bg-secondary h-96">
+        <div className="h-64 overflow-hidden rounded-lg border border-border bg-secondary sm:h-80 lg:h-96">
           <img
             src={currentEvent.image}
             alt={currentEvent.title}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         </div>
       )}
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           {/* Title and Status */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-5">
               <div className="space-y-4">
                 <div>
-                  <h1 className="text-3xl font-bold">{currentEvent.title}</h1>
+                  <h1 className="text-2xl font-semibold sm:text-3xl">{currentEvent.title}</h1>
                   {isEventPast && (
                     <p className="text-sm text-amber-600 mt-2">This event has ended</p>
                   )}
                 </div>
 
                 {/* Event Details */}
-                <div className="space-y-3 pt-4 border-t">
+                <div className="space-y-3 border-t border-border pt-4">
                   <div className="flex items-start gap-3">
                     <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
@@ -160,7 +161,7 @@ export const EventDetail: React.FC = () => {
               <CardTitle>About this event</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm whitespace-pre-wrap text-justify">{currentEvent.description}</p>
+              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{currentEvent.description}</p>
             </CardContent>
           </Card>
 
@@ -175,7 +176,7 @@ export const EventDetail: React.FC = () => {
                   <img
                     src={currentEvent.organizer.avatar}
                     alt={currentEvent.organizer.name}
-                    className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 rounded-md object-cover"
                   />
                 )}
                 <div>
@@ -198,8 +199,8 @@ export const EventDetail: React.FC = () => {
               <CardContent>
                 <RSVPToggle
                   eventId={currentEvent.id}
-                  currentStatus={userRsvpStatus as any}
-                  onRSVPChange={setUserRsvpStatus}
+                  currentStatus={userRsvpStatus}
+                  onRSVPChange={(status) => setUserRsvpStatus(status || undefined)}
                 />
               </CardContent>
             </Card>

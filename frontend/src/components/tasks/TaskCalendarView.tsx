@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Task, TaskStatus } from '@/types/index'
+import { Task } from '@/types/index'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -56,15 +56,15 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
   const getPriorityBg = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-100 text-red-800'
+        return 'border-red-200 bg-red-50 text-red-700'
       case 'high':
-        return 'bg-orange-100 text-orange-800'
+        return 'border-orange-200 bg-orange-50 text-orange-700'
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'border-amber-200 bg-amber-50 text-amber-700'
       case 'low':
-        return 'bg-green-100 text-green-800'
+        return 'border-green-200 bg-green-50 text-green-700'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'border-border bg-secondary text-muted-foreground'
     }
   }
 
@@ -80,14 +80,14 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Previous month">
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-center text-base font-semibold sm:text-lg">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h2>
-        <Button variant="outline" size="icon" onClick={handleNextMonth}>
+        <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Next month">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -97,7 +97,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
           <div className="grid grid-cols-7 gap-2">
           {/* Week days header */}
           {weekDays.map(day => (
-            <div key={day} className="text-center font-semibold text-sm py-2">
+            <div key={day} className="py-2 text-center text-xs font-semibold text-muted-foreground">
               {day}
             </div>
           ))}
@@ -113,27 +113,28 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             return (
               <div
                 key={index}
-                className={`min-h-24 p-2 border rounded-lg ${
-                  isCurrentDay ? 'bg-blue-50 border-blue-300' : 'bg-background'
-                } ${day ? 'cursor-pointer hover:bg-secondary/50' : ''}`}
+                className={`min-h-24 rounded-md border p-2 ${
+                  isCurrentDay ? 'border-primary/35 bg-primary/10' : 'bg-card'
+                } ${day ? 'cursor-pointer transition-colors hover:bg-secondary/60' : ''}`}
               >
                 {day && (
                   <>
-                    <div className={`text-sm font-semibold mb-1 ${isCurrentDay ? 'text-blue-600' : ''}`}>
+                    <div className={`mb-1 text-sm font-semibold ${isCurrentDay ? 'text-primary' : ''}`}>
                       {day}
                     </div>
                     <div className="space-y-1">
                       {dayTasks.slice(0, 2).map(task => (
-                        <div
+                        <button
+                          type="button"
                           key={task.id}
                           onClick={() => onTaskClick(task)}
-                          className="text-xs p-1 bg-white border rounded truncate cursor-pointer hover:shadow-sm"
+                          className="w-full cursor-pointer truncate rounded-md border border-border bg-card p-1 text-left text-xs transition-colors hover:border-primary/40 hover:bg-accent/35"
                         >
                           <div className="font-medium truncate">{task.title}</div>
                           <Badge className={`${getPriorityBg(task.priority)} text-xs`}>
                             {task.priority}
                           </Badge>
-                        </div>
+                        </button>
                       ))}
                       {dayTasks.length > 2 && (
                         <div className="text-xs text-muted-foreground pl-1">

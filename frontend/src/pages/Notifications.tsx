@@ -13,48 +13,17 @@ import { NotificationType } from '@/types/index'
 import { BaseLayout } from '@/components/layout/BaseLayout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, CheckCheck, Trash2 } from 'lucide-react'
+import { Check, CheckCheck, Trash2, Bell } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-const getNotificationIcon = (type: NotificationType) => {
-  const iconMap: Record<NotificationType, string> = {
-    [NotificationType.TASK_ASSIGNED]: '📋',
-    [NotificationType.TASK_COMPLETED]: '✅',
-    [NotificationType.TASK_DUE_SOON]: '⏰',
-    [NotificationType.TASK_OVERDUE]: '⚠️',
-    [NotificationType.TASK_COMMENTED]: '💬',
-    [NotificationType.EVENT_CREATED]: '📅',
-    [NotificationType.EVENT_REMINDER]: '🔔',
-    [NotificationType.MEMBER_ADDED]: '👤',
-    [NotificationType.MEMBER_LEFT]: '👋',
-    [NotificationType.CLUB_UPDATED]: '🏢',
-    [NotificationType.RSVP_RESPONSE]: '✋',
-    [NotificationType.SYSTEM]: '⚙️',
-  }
-  return iconMap[type] || '📬'
-}
-
-const getNotificationColor = (type: NotificationType) => {
-  const colorMap: Record<NotificationType, string> = {
-    [NotificationType.TASK_ASSIGNED]: 'from-blue-100 to-blue-50',
-    [NotificationType.TASK_COMPLETED]: 'from-green-100 to-green-50',
-    [NotificationType.TASK_DUE_SOON]: 'from-amber-100 to-amber-50',
-    [NotificationType.TASK_OVERDUE]: 'from-red-100 to-red-50',
-    [NotificationType.TASK_COMMENTED]: 'from-purple-100 to-purple-50',
-    [NotificationType.EVENT_CREATED]: 'from-cyan-100 to-cyan-50',
-    [NotificationType.EVENT_REMINDER]: 'from-orange-100 to-orange-50',
-    [NotificationType.MEMBER_ADDED]: 'from-emerald-100 to-emerald-50',
-    [NotificationType.MEMBER_LEFT]: 'from-slate-100 to-slate-50',
-    [NotificationType.CLUB_UPDATED]: 'from-indigo-100 to-indigo-50',
-    [NotificationType.RSVP_RESPONSE]: 'from-pink-100 to-pink-50',
-    [NotificationType.SYSTEM]: 'from-gray-100 to-gray-50',
-  }
-  return colorMap[type] || 'from-gray-100 to-gray-50'
+const getNotificationInitials = (type: NotificationType) => {
+  const words = type.replace(/_/g, ' ').split(' ')
+  return words.slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join('')
 }
 
 export const Notifications: React.FC = () => {
   const dispatch = useAppDispatch()
-  const { notifications, unreadCount, isFetching, filter } = useAppSelector((state) => state.notifications)
+  const { notifications, unreadCount, isFetching } = useAppSelector((state) => state.notifications)
   const [selectedFilter, setSelectedFilter] = useState<NotificationType | 'all' | 'unread'>('all')
 
   useEffect(() => {
@@ -76,147 +45,140 @@ export const Notifications: React.FC = () => {
     selectedFilter === 'all'
       ? notifications
       : selectedFilter === 'unread'
-        ? notifications.filter((n) => !n.isRead)
-        : notifications.filter((n) => n.type === selectedFilter)
+        ? notifications.filter((notification) => !notification.isRead)
+        : notifications.filter((notification) => notification.type === selectedFilter)
 
-  const handleMarkAsRead = (notificationId: string) => {
-    dispatch(markNotificationAsRead(notificationId))
-  }
-
-  const handleDelete = (notificationId: string) => {
-    dispatch(deleteNotification(notificationId))
-  }
+  const filters = [
+    { label: 'All', value: 'all' as const },
+    { label: 'Unread', value: 'unread' as const },
+    ...Object.values(NotificationType).map((value) => ({
+      label: value.replace(/_/g, ' '),
+      value,
+    })),
+  ]
 
   return (
     <BaseLayout title="Notifications">
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground mt-2">{unreadCount} unread notifications</p>
-      </div>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-normal">Notifications</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{unreadCount} unread notifications</p>
+          </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          onClick={() => dispatch(markAllNotificationsAsRead())}
-          disabled={unreadCount === 0}
-          size="sm"
-        >
-          <CheckCheck className="h-4 w-4 mr-2" />
-          Mark all read
-        </Button>
-        <Button
-          onClick={() => {
-            if (confirm('Delete all notifications?')) {
-              dispatch(deleteAllNotifications())
-            }
-          }}
-          variant="destructive"
-          size="sm"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete all
-        </Button>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {[
-          { label: 'All', value: 'all' as const },
-          { label: 'Unread', value: 'unread' as const },
-          ...Object.entries(NotificationType).map(([_, value]) => ({
-            label: value.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            value: value as NotificationType,
-          })),
-        ].map((filter) => (
-          <Button
-            key={filter.value}
-            onClick={() => handleFilterChange(filter.value as any)}
-            variant={selectedFilter === filter.value ? 'default' : 'outline'}
-            size="sm"
-          >
-            {filter.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Notifications List */}
-      <div className="space-y-3">
-        {isFetching && notifications.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground text-center py-8">Loading notifications...</p>
-            </CardContent>
-          </Card>
-        ) : filteredNotifications.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground text-center py-8">No notifications found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredNotifications.map((notification) => (
-            <Card
-              key={notification.id}
-              className={`overflow-hidden transition-all ${!notification.isRead ? 'border-primary/50 bg-primary/5' : ''}`}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              onClick={() => dispatch(markAllNotificationsAsRead())}
+              disabled={unreadCount === 0}
+              size="sm"
+              className="w-full sm:w-auto"
             >
-              <div className={`h-1 bg-gradient-to-r ${getNotificationColor(notification.type)}`} />
-              <CardContent className="pt-4">
-                <div className="flex gap-4">
-                  {/* Icon */}
-                  <div className="text-3xl flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all read
+            </Button>
+            <Button
+              onClick={() => {
+                if (confirm('Delete all notifications?')) {
+                  dispatch(deleteAllNotifications())
+                }
+              }}
+              variant="destructive"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete all
+            </Button>
+          </div>
+        </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className={`font-semibold ${!notification.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {notification.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                      </div>
-                      {!notification.isRead && (
-                        <div className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-primary mt-2" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                      <span className="inline-block px-2 py-1 bg-secondary rounded text-xs">
-                        {notification.type.replace(/_/g, ' ').toUpperCase()}
-                      </span>
-                      <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
-                    </div>
-                  </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {filters.map((filterItem) => (
+            <Button
+              key={filterItem.value}
+              onClick={() => handleFilterChange(filterItem.value)}
+              variant={selectedFilter === filterItem.value ? 'default' : 'outline'}
+              size="sm"
+              className="shrink-0 capitalize"
+            >
+              {filterItem.label}
+            </Button>
+          ))}
+        </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {!notification.isRead && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleMarkAsRead(notification.id)}
-                        title="Mark as read"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(notification.id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+        <div className="space-y-3">
+          {isFetching && notifications.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-sm text-muted-foreground">Loading notifications...</p>
               </CardContent>
             </Card>
-          ))
-        )}
+          ) : filteredNotifications.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Bell className="mx-auto mb-3 h-8 w-8 text-muted-foreground/60" />
+                <p className="text-sm font-medium">No notifications found</p>
+                <p className="mt-1 text-sm text-muted-foreground">Updates will appear here when there is activity.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredNotifications.map((notification) => (
+              <Card
+                key={notification.id}
+                className={`transition-colors ${!notification.isRead ? 'border-primary/25 bg-primary/5' : ''}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-xs font-semibold text-muted-foreground">
+                      {getNotificationInitials(notification.type)}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className={`font-semibold ${!notification.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {notification.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-muted-foreground">{notification.message}</p>
+                        </div>
+                        {!notification.isRead && <div className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />}
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full border border-border bg-secondary px-2 py-0.5 capitalize">
+                          {notification.type.replace(/_/g, ' ')}
+                        </span>
+                        <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2 sm:self-start">
+                      {!notification.isRead && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => dispatch(markNotificationAsRead(notification.id))}
+                          aria-label="Mark notification as read"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => dispatch(deleteNotification(notification.id))}
+                        aria-label="Delete notification"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
-    </div>
     </BaseLayout>
   )
 }

@@ -6,14 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   fetchClubDetail,
-  updateClub,
   inviteMember,
   updateMemberRole,
   removeMember,
   setActiveClub,
 } from '@/store/slices/clubSlice'
-import { UserRole, UpdateMemberRoleRequest } from '@/types/index'
-import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Crown } from 'lucide-react'
+import { UserRole } from '@/types/index'
+import { ArrowLeft, UserPlus, Trash2, Crown } from 'lucide-react'
 
 type TabType = 'overview' | 'members' | 'settings'
 
@@ -147,11 +146,11 @@ export const ClubDetails: React.FC = () => {
   return (
     <BaseLayout title={currentClub.name}>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate('/clubs')}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Button variant="outline" size="icon" onClick={() => navigate('/clubs')} aria-label="Back to clubs">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-3xl font-bold">{currentClub.name}</h1>
             <p className="text-muted-foreground">Owner: {currentClub.owner.name}</p>
           </div>
@@ -161,12 +160,12 @@ export const ClubDetails: React.FC = () => {
           <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>
         )}
 
-        <div className="flex gap-2 border-b border-border">
+        <div className="flex gap-2 overflow-x-auto border-b border-border">
           {(['overview', 'members', 'settings'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 font-medium capitalize border-b-2 transition-colors ${
+              className={`shrink-0 border-b-2 px-4 py-2 text-sm font-medium capitalize transition-colors ${
                 activeTab === tab
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -229,7 +228,7 @@ export const ClubDetails: React.FC = () => {
                         type="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1"
+                        className="mt-1 h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
                         placeholder="member@example.com"
                         required
                       />
@@ -240,7 +239,7 @@ export const ClubDetails: React.FC = () => {
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                        className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1"
+                        className="mt-1 h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
                       >
                         <option value={UserRole.MEMBER}>Member</option>
                         {isOwner && (
@@ -249,7 +248,7 @@ export const ClubDetails: React.FC = () => {
                       </select>
                     </div>
 
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex flex-col gap-2 pt-4 sm:flex-row">
                       <Button type="submit" disabled={invitingId === inviteEmail}>
                         {invitingId === inviteEmail ? 'Sending...' : 'Send Invite'}
                       </Button>
@@ -269,23 +268,23 @@ export const ClubDetails: React.FC = () => {
             <div className="space-y-2">
               {members.map((member) => (
                 <Card key={member.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{member.name}</p>
-                          <span className="text-xs px-2 py-1 bg-secondary rounded capitalize">
+                          <p className="truncate font-medium">{member.name}</p>
+                          <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-muted-foreground">
                             {member.role}
                           </span>
                           {member.userId === currentClub.owner.id && (
                             <Crown className="h-4 w-4 text-yellow-500" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                        <p className="truncate text-sm text-muted-foreground">{member.email}</p>
                       </div>
 
                       {canManageMembers && member.userId !== user?.id && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row">
                           {isOwner && member.userId !== currentClub.owner.id && (
                             <>
                               <select
@@ -293,7 +292,7 @@ export const ClubDetails: React.FC = () => {
                                 onChange={(e) =>
                                   handleUpdateRole(member.id, e.target.value as UserRole)
                                 }
-                                className="px-2 py-1 text-sm border border-border rounded bg-background"
+                                className="h-8 rounded-md border border-input bg-card px-2 text-sm shadow-xs outline-none focus:border-primary focus:shadow-[var(--focus-ring)]"
                               >
                                 <option value={UserRole.MEMBER}>Member</option>
                                 <option value={UserRole.CLUB_ADMIN}>Admin</option>
@@ -304,6 +303,7 @@ export const ClubDetails: React.FC = () => {
                                   variant="outline"
                                   onClick={() => handleTransferOwnership(member.id)}
                                   title="Transfer ownership"
+                                  aria-label={`Transfer ownership to ${member.name}`}
                                 >
                                   <Crown className="h-4 w-4" />
                                 </Button>
@@ -316,6 +316,7 @@ export const ClubDetails: React.FC = () => {
                             variant="outline"
                             onClick={() => handleRemoveMember(member.id)}
                             className="text-destructive"
+                            aria-label={`Remove ${member.name}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

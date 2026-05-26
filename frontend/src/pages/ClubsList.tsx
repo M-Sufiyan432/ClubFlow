@@ -7,7 +7,7 @@ import { SkeletonCard } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { fetchClubs, createClub, joinClub, setActiveClub } from '@/store/slices/clubSlice'
-import { CreateClubRequest, UserRole } from '@/types/index'
+import { CreateClubRequest } from '@/types/index'
 import { Plus } from 'lucide-react'
 
 export const ClubsList: React.FC = () => {
@@ -68,12 +68,12 @@ export const ClubsList: React.FC = () => {
   return (
     <BaseLayout title="Clubs">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">My Clubs</h1>
             <p className="text-muted-foreground">Manage and explore your clubs</p>
           </div>
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             New Club
           </Button>
@@ -160,7 +160,7 @@ export const ClubsList: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {clubs.map((club) => (
               <div key={club.id} onClick={() => handleSelectClub(club.id)}>
                 <ClubCard

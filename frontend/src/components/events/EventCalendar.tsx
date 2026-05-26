@@ -38,13 +38,14 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{format(currentDate, 'MMMM yyyy')}</CardTitle>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+              aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -59,6 +60,7 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
               variant="outline"
               size="sm"
               onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+              aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -66,11 +68,12 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="overflow-x-auto">
+        <div className="min-w-[42rem] space-y-4">
           {/* Week day headers */}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {weekDays.map((day) => (
-              <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2">
+              <div key={day} className="py-2 text-center text-xs font-semibold text-muted-foreground">
                 {day}
               </div>
             ))}
@@ -89,12 +92,12 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
                     <div
                       key={`${weekIdx}-${dayIdx}`}
                       onClick={() => day && onDateSelect?.(day)}
-                      className={`min-h-24 p-2 rounded-lg border cursor-pointer transition-colors ${
+                      className={`min-h-24 cursor-pointer rounded-md border p-2 transition-colors ${
                         !isCurrentMonth
                           ? 'bg-secondary/30 text-muted-foreground'
                           : isToday
-                            ? 'bg-primary/10 border-primary'
-                            : 'bg-card hover:bg-secondary/50'
+                            ? 'border-primary/35 bg-primary/10'
+                            : 'bg-card hover:bg-secondary/60'
                       }`}
                     >
                       {day && (
@@ -110,7 +113,7 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
                                   e.stopPropagation()
                                   onEventClick?.(event)
                                 }}
-                                className="w-full text-left text-xs p-1 rounded bg-primary/20 text-primary hover:bg-primary/30 truncate"
+                                className="w-full truncate rounded-md border border-primary/15 bg-primary/10 p-1 text-left text-xs text-primary transition-colors hover:bg-primary/15"
                               >
                                 {event.title}
                               </button>
@@ -134,6 +137,7 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({ events, onDateSele
           <div className="pt-4 border-t text-sm text-muted-foreground">
             <p>{events.length} events this month</p>
           </div>
+        </div>
         </div>
       </CardContent>
     </Card>

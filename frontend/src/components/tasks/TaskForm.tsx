@@ -130,7 +130,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 value={formData.priority}
                 onChange={e => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1 text-sm"
+                className="mt-1 h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
               >
                 <option value={TaskPriority.LOW}>Low</option>
                 <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -187,7 +187,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               <Input
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="Add tag and press Enter"
                 disabled={isLoading}
               />

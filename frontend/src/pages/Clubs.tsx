@@ -41,14 +41,14 @@ export const Clubs: React.FC = () => {
   return (
     <BaseLayout title="Clubs">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">My Clubs</h1>
             <p className="text-muted-foreground">
               Manage and explore your clubs
             </p>
           </div>
-          <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+          <Button onClick={() => setShowCreateForm(!showCreateForm)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             New Club
           </Button>
@@ -75,7 +75,7 @@ export const Clubs: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1"
+                    className="mt-1 h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
                     placeholder="Enter club name"
                   />
                 </div>
@@ -87,7 +87,7 @@ export const Clubs: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1 min-h-24"
+                    className="mt-1 min-h-24 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
                     placeholder="Describe your club"
                   />
                 </div>
@@ -99,7 +99,7 @@ export const Clubs: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, category: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background mt-1"
+                    className="mt-1 h-9 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors focus:border-primary focus:shadow-[var(--focus-ring)]"
                   >
                     <option value="">Select a category</option>
                     <option value="sports">Sports</option>
@@ -110,7 +110,7 @@ export const Clubs: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex flex-col gap-2 pt-4 sm:flex-row">
                   <Button type="submit">Create Club</Button>
                   <Button
                     type="button"
@@ -130,7 +130,7 @@ export const Clubs: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : clubs.length === 0 ? (
-          <div className="text-center py-12 bg-secondary/20 rounded-lg">
+          <div className="rounded-lg border border-dashed border-border bg-card py-12 text-center">
             <p className="text-muted-foreground mb-4">No clubs yet</p>
             <Button onClick={() => setShowCreateForm(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -138,15 +138,15 @@ export const Clubs: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {clubs.map((club) => (
               <Card
                 key={club.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
+                className="cursor-pointer transition-colors hover:border-primary/25 hover:bg-accent/25"
                 onClick={() => navigate(`/clubs/${club.id}`)}
               >
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <CardTitle>{club.name}</CardTitle>
                       {club.category && (
@@ -156,7 +156,7 @@ export const Clubs: React.FC = () => {
                       )}
                     </div>
                     {club.status === 'archived' && (
-                      <span className="text-xs px-2 py-1 bg-secondary text-muted-foreground rounded">
+                      <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                         Archived
                       </span>
                     )}

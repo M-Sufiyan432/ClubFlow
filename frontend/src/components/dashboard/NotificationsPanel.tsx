@@ -49,26 +49,26 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ notifica
       case 'high':
         return 'border-l-red-500'
       case 'medium':
-        return 'border-l-yellow-500'
+        return 'border-l-amber-500'
       case 'low':
         return 'border-l-blue-500'
       default:
-        return 'border-l-gray-500'
+        return 'border-l-slate-400'
     }
   }
 
   const getTypeColor = (type: DashboardNotification['type']) => {
     switch (type) {
       case 'task':
-        return 'bg-blue-50 text-blue-600'
+        return 'bg-blue-50 text-blue-700'
       case 'event':
-        return 'bg-green-50 text-green-600'
+        return 'bg-green-50 text-green-700'
       case 'member':
-        return 'bg-purple-50 text-purple-600'
+        return 'bg-violet-50 text-violet-700'
       case 'system':
-        return 'bg-yellow-50 text-yellow-600'
+        return 'bg-amber-50 text-amber-700'
       default:
-        return 'bg-gray-50 text-gray-600'
+        return 'bg-slate-50 text-slate-700'
     }
   }
 
@@ -81,7 +81,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ notifica
         <CardContent>
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+              <div key={i} className="h-16 animate-pulse rounded-md bg-muted" />
             ))}
           </div>
         </CardContent>
@@ -91,7 +91,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ notifica
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Notifications</CardTitle>
           <CardDescription>
@@ -113,23 +113,23 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ notifica
 
       <CardContent>
         {notifications.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="py-8 text-center text-muted-foreground">
             <p>No notifications</p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="max-h-[24rem] space-y-3 overflow-y-auto pr-1">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
                 className={`border-l-4 ${getPriorityColor(
                   notification.priority
-                )} rounded-lg p-3 transition-all hover:bg-muted/50 ${
-                  !notification.isRead ? 'bg-muted/30' : ''
+                )} rounded-lg border-y border-r border-border bg-card p-3 transition-colors hover:bg-secondary/60 ${
+                  !notification.isRead ? 'bg-primary/5' : ''
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    <div className={`mt-0.5 p-1.5 rounded ${getTypeColor(notification.type)}`}>
+                  <div className="flex min-w-0 flex-1 items-start gap-2">
+                    <div className={`mt-0.5 rounded-md p-1.5 ${getTypeColor(notification.type)}`}>
                       {getIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -148,20 +148,20 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ notifica
                     {!notification.isRead && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleMarkAsRead(notification.id)}
-                        title="Mark as read"
                         className="h-8 w-8 p-0"
+                        aria-label="Mark notification as read"
                       >
                         <CheckCircle2 className="h-4 w-4" />
                       </Button>
                     )}
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleDelete(notification.id)}
-                      title="Delete"
                       className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      aria-label="Delete notification"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

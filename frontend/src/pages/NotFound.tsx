@@ -7,7 +7,7 @@ export const NotFound: React.FC = () => {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="text-center space-y-8 max-w-md">
         <div className="flex justify-center">
           <div className="relative">

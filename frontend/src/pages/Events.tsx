@@ -7,7 +7,7 @@ import { EventForm } from '@/components/events/EventForm'
 import { EventCalendar } from '@/components/events/EventCalendar'
 import { SkeletonCard } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Event } from '@/types/index'
 import { Calendar, List, Plus } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
@@ -81,12 +81,12 @@ export const Events: React.FC = () => {
     <BaseLayout title="Events">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Events</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage and track club events</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
+        <Button onClick={() => setShowCreateForm(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Create Event
         </Button>
@@ -136,7 +136,7 @@ export const Events: React.FC = () => {
       )}
 
       {/* View Type Toggle */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={viewType === 'calendar' ? 'default' : 'outline'}
           onClick={() => setViewType('calendar')}
@@ -199,7 +199,7 @@ export const Events: React.FC = () => {
                 onClick={() => handleEventClick(event)}
               >
                 <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold">{event.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1">{event.description.substring(0, 100)}...</p>

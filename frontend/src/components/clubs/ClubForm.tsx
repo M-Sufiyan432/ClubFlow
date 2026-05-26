@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { Club } from '@/store/slices/clubSlice'
+import { Club, CreateClubRequest } from '@/types/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface ClubFormProps {
   club?: Club
-  onSubmit: (data: Omit<Club, 'id' | 'createdAt' | 'createdBy' | 'memberCount'>) => void
+  onSubmit: (data: CreateClubRequest) => void
   onCancel: () => void
   isLoading?: boolean
 }
@@ -63,7 +63,7 @@ export const ClubForm: React.FC<ClubFormProps> = ({
       onSubmit({
         name: formData.name,
         description: formData.description,
-        image: formData.image,
+        logo: formData.image,
       })
     }
   }
@@ -104,7 +104,7 @@ export const ClubForm: React.FC<ClubFormProps> = ({
               onChange={handleChange}
               disabled={isLoading}
               rows={4}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              className="min-h-24 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-70"
             />
             {errors.description && (
               <p className="text-xs text-destructive">{errors.description}</p>
@@ -126,7 +126,7 @@ export const ClubForm: React.FC<ClubFormProps> = ({
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex flex-col gap-2 pt-4 sm:flex-row">
             <Button type="submit" disabled={isLoading}>
               {isLoading ? 'Saving...' : club ? 'Update Club' : 'Create Club'}
             </Button>
