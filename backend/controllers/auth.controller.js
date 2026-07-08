@@ -5,6 +5,14 @@ const { logger } = require('../config/logger');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 const { enqueueEmail, isQueueEnabled } = require('../jobs');
+const {
+  issueTokenPair,
+  listUserSessions,
+  revokeAllUserSessions,
+  revokeRefreshToken,
+  revokeSession,
+  rotateRefreshToken
+} = require('../services/token.service');
 
 const getId = (value) => {
   if (!value) return undefined;
@@ -73,7 +81,7 @@ exports.register = async (req, res, next) => {
       }
     });
 
-    sendTokenResponse(user, 201, res, 'Registration successful');
+    await sendTokenResponse(user, 201, req, res, 'Registration successful');
   } catch (error) {
     logger.error(`Register Error: ${error.message}`);
     res.status(500).json({
@@ -134,7 +142,7 @@ exports.login = async (req, res, next) => {
       }
     });
 
-    sendTokenResponse(user, 200, res, 'Login successful');
+    await sendTokenResponse(user, 200, req, res, 'Login successful');
   } catch (error) {
     logger.error(`Login Error: ${error.message}`);
     res.status(500).json({
@@ -181,6 +189,10 @@ exports.getMe = async (req, res) => {
 // @access  Private
 exports.logout = async (req, res) => {
   try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (refreshToken) await revokeRefreshToken(refreshToken, 'logout');
+    if (req.user?.sessionId) await revokeSession(req.user.sessionId, 'logout');
+
     // Log audit
     await AuditLog.logAction({
       user: req.user._id,
@@ -194,10 +206,7 @@ exports.logout = async (req, res) => {
       }
     });
 
-    res.cookie('token', 'none', {
-      expires: new Date(Date.now() + 10 * 1000),
-      httpOnly: true
-    });
+    clearAuthCookies(res);
 
     res.status(200).json({
       success: true,
@@ -208,6 +217,102 @@ exports.logout = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error logging out'
+    });
+  }
+};
+
+// @desc    Rotate refresh token and issue a new access token
+// @route   POST /api/auth/refresh
+// @access  Public
+exports.refresh = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token required'
+      });
+    }
+
+    const pair = await rotateRefreshToken(refreshToken, req);
+    setAuthCookies(res, pair);
+
+    res.status(200).json({
+      success: true,
+      message: 'Token refreshed',
+      accessToken: pair.accessToken,
+      refreshToken: pair.refreshToken,
+      token: pair.accessToken,
+      sessionId: pair.sessionId,
+      user: buildAuthUser(pair.user)
+    });
+  } catch (error) {
+    logger.warn('Refresh Token Error', { error: error.message });
+    clearAuthCookies(res);
+    res.status(error.statusCode || 401).json({
+      success: false,
+      message: error.message || 'Unable to refresh session'
+    });
+  }
+};
+
+// @desc    List active refresh-token sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+exports.getSessions = async (req, res) => {
+  try {
+    const sessions = await listUserSessions(req.user._id);
+    res.status(200).json({
+      success: true,
+      data: sessions,
+      sessions
+    });
+  } catch (error) {
+    logger.error(`Get Sessions Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching sessions'
+    });
+  }
+};
+
+// @desc    Revoke one session
+// @route   DELETE /api/auth/sessions/:sessionId
+// @access  Private
+exports.revokeSessionById = async (req, res) => {
+  try {
+    await revokeSession(req.params.sessionId, 'user_revoked');
+    res.status(200).json({
+      success: true,
+      message: 'Session revoked'
+    });
+  } catch (error) {
+    logger.error(`Revoke Session Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error revoking session'
+    });
+  }
+};
+
+// @desc    Revoke all sessions and invalidate access tokens
+// @route   POST /api/auth/logout-all
+// @access  Private
+exports.logoutAll = async (req, res) => {
+  try {
+    await revokeAllUserSessions(req.user._id, 'logout_all');
+    await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } });
+    clearAuthCookies(res);
+
+    res.status(200).json({
+      success: true,
+      message: 'All sessions revoked'
+    });
+  } catch (error) {
+    logger.error(`Logout All Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error revoking sessions'
     });
   }
 };
@@ -301,7 +406,9 @@ exports.resetPassword = async (req, res) => {
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+    await revokeAllUserSessions(user._id, 'password_reset');
 
     // Log audit
     await AuditLog.logAction({
@@ -316,7 +423,7 @@ exports.resetPassword = async (req, res) => {
       }
     });
 
-    sendTokenResponse(user, 200, res, 'Password reset successful');
+    await sendTokenResponse(user, 200, req, res, 'Password reset successful');
   } catch (error) {
     logger.error(`Reset Password Error: ${error.message}`);
     res.status(500).json({
@@ -342,7 +449,9 @@ exports.updatePassword = async (req, res) => {
     }
 
     user.password = req.body.newPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+    await revokeAllUserSessions(user._id, 'password_changed');
 
     // Log audit
     await AuditLog.logAction({
@@ -357,7 +466,7 @@ exports.updatePassword = async (req, res) => {
       }
     });
 
-    sendTokenResponse(user, 200, res, 'Password updated successfully');
+    await sendTokenResponse(user, 200, req, res, 'Password updated successfully');
   } catch (error) {
     logger.error(`Update Password Error: ${error.message}`);
     res.status(500).json({
@@ -371,29 +480,45 @@ exports.updatePassword = async (req, res) => {
 // @route   GET /api/auth/google/callback
 // @access  Public
 exports.googleCallback = (req, res) => {
-  sendTokenResponse(req.user, 200, res, 'Google login successful');
+  sendTokenResponse(req.user, 200, req, res, 'Google login successful');
 };
 
 // Helper function to get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res, message) => {
-  const token = user.getSignedJwtToken();
-
-  const options = {
-    expires: new Date(
-      Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
-    ),
+const getCookieOptions = (maxAge) => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  };
+    sameSite: 'strict',
+    maxAge
+});
+
+const setAuthCookies = (res, pair) => {
+  res.cookie('accessToken', pair.accessToken, getCookieOptions(Number(process.env.ACCESS_TOKEN_COOKIE_MS || 15 * 60 * 1000)));
+  res.cookie('refreshToken', pair.refreshToken, getCookieOptions(Number(process.env.REFRESH_TOKEN_COOKIE_MS || 30 * 24 * 60 * 60 * 1000)));
+  res.cookie('token', pair.accessToken, getCookieOptions(Number(process.env.ACCESS_TOKEN_COOKIE_MS || 15 * 60 * 1000)));
+};
+
+const clearAuthCookies = (res) => {
+  ['accessToken', 'refreshToken', 'token'].forEach((name) => {
+    res.cookie(name, 'none', {
+      expires: new Date(Date.now() + 10 * 1000),
+      httpOnly: true
+    });
+  });
+};
+
+const sendTokenResponse = async (user, statusCode, req, res, message) => {
+  const pair = await issueTokenPair(user, req);
+  setAuthCookies(res, pair);
 
   res
     .status(statusCode)
-    .cookie('token', token, options)
     .json({
       success: true,
       message,
-      token,
+      accessToken: pair.accessToken,
+      refreshToken: pair.refreshToken,
+      token: pair.accessToken,
+      sessionId: pair.sessionId,
       user: buildAuthUser(user)
     });
 };

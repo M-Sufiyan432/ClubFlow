@@ -2,6 +2,7 @@ const { Queue, QueueEvents } = require('bullmq');
 const { getRedisConnection } = require('../config/redis');
 const QUEUE_NAMES = require('./queueNames');
 const { logger } = require('../config/logger');
+const { withProducerContext } = require('./tracing');
 
 const queues = new Map();
 const queueEvents = new Map();
@@ -55,11 +56,11 @@ const getQueueEvents = (queueName) => {
   events.on('error', (error) => logQueueError(`events:${queueName}`, error));
 
   events.on('failed', ({ jobId, failedReason }) => {
-    logger.error(`[${queueName}] job ${jobId} failed: ${failedReason}`);
+    logger.error('queue.job.failed', { queueName, jobId, failedReason });
   });
 
   events.on('stalled', ({ jobId }) => {
-    logger.warn(`[${queueName}] job ${jobId} stalled`);
+    logger.warn('queue.job.stalled', { queueName, jobId });
   });
 
   queueEvents.set(queueName, events);
@@ -68,7 +69,7 @@ const getQueueEvents = (queueName) => {
 
 const addJob = async (queueName, jobName, data, options = {}) => {
   const queue = getQueue(queueName);
-  return queue.add(jobName, data, options);
+  return queue.add(jobName, withProducerContext(data), options);
 };
 
 const initializeQueues = (options = {}) => {

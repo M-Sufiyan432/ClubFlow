@@ -1,4 +1,5 @@
 const { logger } = require('../config/logger');
+const { captureException } = require('../config/sentry');
 
 class ErrorResponse extends Error {
   constructor(message, statusCode) {
@@ -11,11 +12,28 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error for dev
-  logger.error(`Error: ${err.message}`, {
+  logger.error('http.request.error', {
+    error: err.message,
+    name: err.name,
     stack: err.stack,
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
+    requestId: req.requestId,
+    userId: req.user?._id?.toString() || req.user?.id,
+    clubId: req.clubId || req.club?._id?.toString() || req.headers['x-club-id']
+  });
+
+  captureException(err, {
+    userId: req.user?._id?.toString() || req.user?.id,
+    tags: {
+      requestId: req.requestId,
+      clubId: req.clubId || req.club?._id?.toString() || req.headers['x-club-id']
+    },
+    extra: {
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: err.statusCode
+    }
   });
 
   // Mongoose bad ObjectId
@@ -63,6 +81,7 @@ const errorHandler = (err, req, res, next) => {
 
   res.status(error.statusCode || 500).json({
     success: false,
+    requestId: req.requestId,
     message: error.message || 'Server Error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });

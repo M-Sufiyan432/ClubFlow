@@ -32,7 +32,11 @@ const enqueueDeadLetter = async (job, error) => {
     })
   );
 
-  logger.error(`[${job.queueName}] job ${job.id} moved to dead-letter queue`);
+  logger.error('queue.dead_letter.enqueued', {
+    queueName: job.queueName,
+    jobName: job.name,
+    jobId: String(job.id)
+  });
 };
 
 module.exports = {

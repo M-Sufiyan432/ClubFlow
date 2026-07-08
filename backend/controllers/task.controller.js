@@ -5,6 +5,8 @@ const AuditLog = require('../models/AuditLog.model');
 const cloudinary = require('../config/cloudinary');
 const { logger } = require('../config/logger');
 const { enqueueAttachmentScan, isQueueEnabled, scheduleTaskReminders } = require('../jobs');
+const { createActivity } = require('../services/activity.service');
+const { PERMISSIONS, can } = require('../services/permission.service');
 const {
   assertTaskAttachmentKey,
   buildTaskAttachmentKey,
@@ -118,6 +120,25 @@ const enqueueAttachmentScanSafely = async ({ taskId, attachmentId, storageKey })
   }
 };
 
+const recordTaskActivity = async (req, task, type, summary, metadata = {}, changes) => {
+  try {
+    await createActivity({
+      req,
+      task,
+      type,
+      summary,
+      metadata,
+      changes
+    });
+  } catch (error) {
+    logger.error('Task activity creation error', {
+      error: error.message,
+      taskId: task?._id,
+      type
+    });
+  }
+};
+
 const uploadBufferToCloudinary = (file, folder) =>
   new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -179,9 +200,21 @@ const getPopulatedTask = (taskId) =>
     .populate('completedBy', 'name email');
 
 const requireTaskPermission = async (req, res, task, action) => {
+  const permissionMap = {
+    view: PERMISSIONS.TASK_VIEW,
+    status: PERMISSIONS.TASK_STATUS_UPDATE,
+    comment: PERMISSIONS.COMMENT_CREATE,
+    attachmentUpload: PERMISSIONS.ATTACHMENT_UPLOAD,
+    attachmentView: PERMISSIONS.ATTACHMENT_VIEW,
+    attachmentModerate: PERMISSIONS.ATTACHMENT_MODERATE,
+    subtask: PERMISSIONS.TASK_STATUS_UPDATE,
+    update: PERMISSIONS.TASK_UPDATE,
+    delete: PERMISSIONS.TASK_DELETE,
+    assign: PERMISSIONS.TASK_ASSIGN
+  };
+
   const clubId = task.club?._id || task.club;
   const club = await Club.findById(clubId);
-
   if (!club) {
     res.status(404).json({
       success: false,
@@ -190,40 +223,13 @@ const requireTaskPermission = async (req, res, task, action) => {
     return false;
   }
 
-  if (isGlobalAdmin(req.user)) {
-    return true;
-  }
+  const decision = await can(req.user, permissionMap[action], { club, task });
 
-  const clubRole = getClubRole(club, req.user._id);
-
-  if (!clubRole) {
+  if (!decision.allowed) {
     res.status(403).json({
       success: false,
-      message: 'You must be a club member to access this task'
-    });
-    return false;
-  }
-
-  const isAssignee = taskHasAssignee(task, req.user._id);
-  const isCreator = idsMatch(task.createdBy, req.user._id);
-
-  const allowed =
-    action === 'view'
-      ? TASK_MANAGER_ROLES.includes(clubRole) || isAssignee || isCreator
-      : action === 'status' || action === 'comment' || action === 'subtask'
-        ? TASK_MANAGER_ROLES.includes(clubRole) || isAssignee
-        : action === 'update'
-          ? TASK_MANAGER_ROLES.includes(clubRole) || isCreator
-          : action === 'delete'
-            ? TASK_DELETER_ROLES.includes(clubRole)
-            : action === 'assign'
-              ? TASK_ASSIGNER_ROLES.includes(clubRole)
-              : false;
-
-  if (!allowed) {
-    res.status(403).json({
-      success: false,
-      message: 'You are not authorized to perform this task action'
+      message: decision.reason || 'You are not authorized to perform this task action',
+      permission: permissionMap[action]
     });
     return false;
   }
@@ -468,9 +474,10 @@ exports.createTask = async (req, res) => {
       });
     }
 
-    const clubRole = getClubRole(clubDoc, req.user._id);
-    const canCreateTask = isGlobalAdmin(req.user) || TASK_CREATOR_ROLES.includes(clubRole);
-    const canAssignOnCreate = isGlobalAdmin(req.user) || TASK_ASSIGNER_ROLES.includes(clubRole);
+    const createDecision = await can(req.user, PERMISSIONS.TASK_CREATE, { club: clubDoc });
+    const assignDecision = await can(req.user, PERMISSIONS.TASK_ASSIGN, { club: clubDoc });
+    const canCreateTask = createDecision.allowed;
+    const canAssignOnCreate = assignDecision.allowed;
 
     if (!canCreateTask) {
       return res.status(403).json({
@@ -565,6 +572,25 @@ exports.createTask = async (req, res) => {
         additionalInfo: { taskId: task._id, assigneeIds: assigneeIdsToSave }
       }
     });
+
+    await recordTaskActivity(
+      req,
+      task,
+      'task.created',
+      `Created task "${title}"`,
+      { assigneeIds: assigneeIdsToSave, priority: task.priority, status: task.status }
+    );
+
+    if (assigneeIdsToSave.length > 0) {
+      await recordTaskActivity(
+        req,
+        task,
+        'task.assigned',
+        `Assigned ${assigneeIdsToSave.length} user${assigneeIdsToSave.length === 1 ? '' : 's'} to "${title}"`,
+        { assigneeIds: assigneeIdsToSave },
+        { after: { assignedTo: assigneeIdsToSave } }
+      );
+    }
 
     await scheduleTaskRemindersSafely(task);
 
@@ -705,6 +731,18 @@ exports.updateTask = async (req, res) => {
       }
     });
 
+    await recordTaskActivity(
+      req,
+      task,
+      'task.status_changed',
+      `Changed status from ${oldStatus} to ${normalizedStatus}`,
+      {},
+      {
+        before: { status: oldStatus },
+        after: { status: normalizedStatus }
+      }
+    );
+
     if (changes.dueDate) {
       await scheduleTaskRemindersSafely(task);
     }
@@ -776,6 +814,15 @@ exports.deleteTask = async (req, res) => {
         additionalInfo: { taskId: task._id }
       }
     });
+
+    await recordTaskActivity(
+      req,
+      task,
+      'task.assigned',
+      `Assigned ${userIds.length} user${userIds.length === 1 ? '' : 's'} to "${task.title}"`,
+      { assigneeIds: userIds },
+      { after: { assignedTo: userIds } }
+    );
 
     res.status(200).json({
       success: true,
@@ -877,6 +924,17 @@ exports.updateTaskStatus = async (req, res) => {
       }
     });
 
+    await recordTaskActivity(
+      req,
+      task,
+      'task.comment_added',
+      `Added a comment to "${task.title}"`,
+      {
+        commentId: comment._id,
+        mentionIds: mentions || []
+      }
+    );
+
     if (normalizedStatus !== 'completed') {
       await scheduleTaskRemindersSafely(task);
     }
@@ -965,6 +1023,19 @@ exports.assignTask = async (req, res) => {
       }
     });
 
+    await recordTaskActivity(
+      req,
+      task,
+      'task.attachment_uploaded',
+      `Uploaded attachment "${req.file.originalname}"`,
+      {
+        filename: req.file.originalname,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+        storageProvider: 'cloudinary'
+      }
+    );
+
     await scheduleTaskRemindersSafely(task);
 
     res.status(200).json({
@@ -996,7 +1067,7 @@ exports.addComment = async (req, res) => {
       });
     }
 
-    if (!(await requireTaskPermission(req, res, task, 'comment'))) return;
+    if (!(await requireTaskPermission(req, res, task, 'attachmentUpload'))) return;
 
     const comment = await task.addComment(
       req.user._id,
@@ -1076,7 +1147,7 @@ exports.uploadTaskAttachment = async (req, res) => {
       });
     }
 
-    if (!(await requireTaskPermission(req, res, task, 'comment'))) return;
+    if (!(await requireTaskPermission(req, res, task, 'attachmentUpload'))) return;
 
     if (!req.file) {
       return res.status(400).json({
@@ -1161,7 +1232,7 @@ exports.createTaskAttachmentUploadUrl = async (req, res) => {
       });
     }
 
-    if (!(await requireTaskPermission(req, res, task, 'comment'))) return;
+    if (!(await requireTaskPermission(req, res, task, 'attachmentUpload'))) return;
 
     try {
       validateAttachmentFile({ filename, contentType, fileSize });
@@ -1335,6 +1406,21 @@ exports.completeTaskAttachmentUpload = async (req, res) => {
       }
     });
 
+    await recordTaskActivity(
+      req,
+      task,
+      'task.attachment_uploaded',
+      `Uploaded attachment "${filename}"`,
+      {
+        attachmentId: savedAttachment._id,
+        filename,
+        fileType: contentType,
+        fileSize: Number(fileSize),
+        storageProvider: 's3',
+        storageKey
+      }
+    );
+
     res.status(201).json({
       success: true,
       message: 'Attachment metadata saved successfully',
@@ -1363,7 +1449,7 @@ exports.getTaskAttachmentDownloadUrl = async (req, res) => {
       });
     }
 
-    if (!(await requireTaskPermission(req, res, task, 'view'))) return;
+    if (!(await requireTaskPermission(req, res, task, 'attachmentView'))) return;
 
     const attachment = task.attachments.id(req.params.attachmentId);
     if (!attachment) {
@@ -1443,7 +1529,7 @@ exports.moderateTaskAttachment = async (req, res) => {
       });
     }
 
-    if (!(await requireTaskPermission(req, res, task, 'update'))) return;
+    if (!(await requireTaskPermission(req, res, task, 'attachmentModerate'))) return;
 
     const attachment = task.attachments.id(req.params.attachmentId);
     if (!attachment) {

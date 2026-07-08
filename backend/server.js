@@ -1,3 +1,7 @@
+const dotenv = require('dotenv');
+dotenv.config();
+require('./config/telemetry').initTelemetry();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,16 +14,16 @@ const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const { Server } = require('socket.io');
-const dotenv = require('dotenv');
 const passport = require('passport');
 const session = require('express-session');
 
-// Load environment variables
-dotenv.config();
+const { initSentry, sentryRequestContext } = require('./config/sentry');
+initSentry();
 
 // Import configuration
 const connectDB = require('./config/database');
 const { logger, morganStream } = require('./config/logger');
+const { requestContext } = require('./middleware/requestContext');
 const errorHandler = require('./middleware/errorHandler');
 const rateLimiter = require('./middleware/rateLimiter');
 
@@ -32,6 +36,7 @@ const eventRoutes = require('./routes/event.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const adminRoutes = require('./routes/admin.routes');
+const activityRoutes = require('./routes/activity.routes');
 const { protect } = require('./middleware/auth');
 const { getAllTasks } = require('./controllers/task.controller');
 const { getDashboardData } = require('./controllers/analytics.controller');
@@ -96,6 +101,10 @@ app.use(hpp()); // Prevent HTTP parameter pollution
 // Compression
 app.use(compression());
 
+// Request correlation and structured API timing logs
+app.use(requestContext);
+app.use(sentryRequestContext);
+
 // Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -146,6 +155,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/activity', activityRoutes);
 
 // 404 Handler
 app.use((req, res) => {
@@ -175,14 +185,17 @@ if (isQueueEnabled()) {
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  logger.info(`🚀 ClubFlow Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
-  logger.info(`🔌 Socket.IO server initialized`);
+  logger.info('server.started', {
+    mode: process.env.NODE_ENV,
+    port: PORT,
+    healthUrl: `http://localhost:${PORT}/health`,
+    socketIo: true
+  });
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Rejection: ${err.message}`);
+  logger.error('process.unhandled_rejection', { error: err.message, stack: err.stack });
   server.close(() => {
     process.exit(1);
   });
@@ -190,7 +203,7 @@ process.on('unhandledRejection', (err) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  logger.error(`Uncaught Exception: ${err.message}`);
+  logger.error('process.uncaught_exception', { error: err.message, stack: err.stack });
   process.exit(1);
 });
 
@@ -201,6 +214,7 @@ process.on('SIGTERM', () => {
     logger.info('HTTP server closed');
     await closeQueues();
     await closeRedisConnection();
+    await require('./config/telemetry').shutdownTelemetry();
     mongoose.connection.close(false, () => {
       logger.info('MongoDB connection closed');
       process.exit(0);

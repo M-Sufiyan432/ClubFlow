@@ -21,6 +21,7 @@ const {
   deleteSubtask,
   duplicateTask
 } = require('../controllers/task.controller');
+const { getTaskTimeline } = require('../controllers/activity.controller');
 const { protect, requireClubMembership } = require('../middleware/auth');
 const { createTaskValidation, updateTaskValidation, addCommentValidation, validate } = require('../middleware/validation');
 const { requireTaskCreatePermission } = require('../middlewares/taskPermissions');
@@ -32,6 +33,7 @@ router.get('/getAllTasks', protect, getAllTasks);
 router.post('/', protect, requireTaskCreatePermission, createTaskValidation, validate, createTask);
 router.get('/club/:clubId', protect, requireClubMembership, getTasksByClub);
 router.get('/:taskId', protect, getTaskById);
+router.get('/:taskId/timeline', protect, getTaskTimeline);
 router.put('/:taskId', protect, updateTaskValidation, validate, updateTask);
 router.delete('/:taskId', protect, deleteTask);
 router.patch('/:taskId/status', protect, updateTaskStatus);

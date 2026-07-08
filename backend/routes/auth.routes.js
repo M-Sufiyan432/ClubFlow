@@ -5,10 +5,14 @@ const {
   register,
   login,
   logout,
+  logoutAll,
+  refresh,
+  getSessions,
   getMe,
   forgotPassword,
   resetPassword,
   updatePassword,
+  revokeSessionById,
   googleCallback
 } = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth');
@@ -22,6 +26,10 @@ const {
 router.post('/register', authLimiter,registerValidation, validate, register);
 router.post('/login', authLimiter, loginValidation, validate, login);
 router.post('/logout', protect, logout);
+router.post('/logout-all', protect, logoutAll);
+router.post('/refresh', refresh);
+router.get('/sessions', protect, getSessions);
+router.delete('/sessions/:sessionId', protect, revokeSessionById);
 router.get('/me', protect, getMe);
 router.post('/forgotpassword', passwordResetLimiter, forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);

@@ -10,6 +10,9 @@ const processDeadLetterJob = require('./processors/deadLetter.processor');
 const processScheduledJob = require('./processors/scheduled.processor');
 const processTaskJob = require('./processors/task.processor');
 const processAttachmentJob = require('./processors/attachmentScan.processor');
+const { captureException } = require('../config/sentry');
+const { runWithLogContext } = require('../config/logger');
+const { CORRELATION_FIELD, runJobWithTrace } = require('./tracing');
 
 const workers = [];
 const lastWorkerErrorLogAt = new Map();
@@ -27,32 +30,80 @@ const shouldLogWorkerError = (queueName, error) => {
 };
 
 const createWorker = (queueName, processor, concurrency) => {
-  const worker = new Worker(queueName, processor, {
+  const wrappedProcessor = (job) => {
+    const correlation = job.data?.[CORRELATION_FIELD] || {};
+    return runWithLogContext({
+      requestId: correlation.requestId,
+      correlationId: correlation.correlationId || correlation.requestId,
+      userId: correlation.userId,
+      clubId: correlation.clubId,
+      queueName,
+      jobId: String(job.id),
+      jobName: job.name
+    }, () => runJobWithTrace(queueName, job, processor));
+  };
+
+  const worker = new Worker(queueName, wrappedProcessor, {
     connection: getRedisConnection({ connectionName: `worker:${queueName}` }),
     concurrency
   });
 
   worker.on('completed', (job) => {
-    logger.info(`[${queueName}] completed ${job.name}:${job.id}`);
+    logger.info('worker.job.completed', {
+      queueName,
+      jobName: job.name,
+      jobId: String(job.id),
+      attemptsMade: job.attemptsMade
+    });
   });
 
   worker.on('failed', async (job, error) => {
     if (!job) {
-      logger.error(`[${queueName}] worker failure: ${error.message}`);
+      logger.error('worker.failure', { queueName, error: error.message, stack: error.stack });
+      captureException(error, { tags: { queueName } });
       return;
     }
 
-    logger.error(`[${queueName}] failed ${job.name}:${job.id}: ${error.message}`);
+    const correlation = job.data?.[CORRELATION_FIELD] || {};
+
+    logger.error('worker.job.failed', {
+      queueName,
+      jobName: job.name,
+      jobId: String(job.id),
+      attemptsMade: job.attemptsMade,
+      error: error.message,
+      stack: error.stack
+    });
+    captureException(error, {
+      userId: correlation.userId,
+      tags: {
+        queueName,
+        jobName: job.name,
+        jobId: String(job.id),
+        requestId: correlation.requestId,
+        clubId: correlation.clubId
+      },
+      extra: {
+        data: job.data,
+        attemptsMade: job.attemptsMade
+      }
+    });
     try {
       await enqueueDeadLetter(job, error);
     } catch (deadLetterError) {
-      logger.error(`[${queueName}] failed to enqueue dead-letter for ${job.name}:${job.id}: ${deadLetterError.message}`);
+      logger.error('worker.dead_letter.enqueue_failed', {
+        queueName,
+        jobName: job.name,
+        jobId: String(job.id),
+        error: deadLetterError.message
+      });
     }
   });
 
   worker.on('error', (error) => {
     if (shouldLogWorkerError(queueName, error)) {
-      logger.error(`[${queueName}] worker error: ${error.message}`);
+      logger.error('worker.error', { queueName, error: error.message, stack: error.stack });
+      captureException(error, { tags: { queueName } });
     }
   });
 
@@ -69,7 +120,7 @@ const startWorkers = () => {
   createWorker(QUEUE_NAMES.MAINTENANCE, processScheduledJob, Number(process.env.MAINTENANCE_WORKER_CONCURRENCY || 2));
   createWorker(QUEUE_NAMES.DEAD_LETTER, processDeadLetterJob, Number(process.env.DEAD_LETTER_WORKER_CONCURRENCY || 2));
 
-  logger.info(`Started ${workers.length} BullMQ workers`);
+  logger.info('workers.started', { workerCount: workers.length });
   return workers;
 };
 

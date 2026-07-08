@@ -1,9 +1,31 @@
-import { defineConfig } from 'vite'
+import { createRequire } from 'module'
+import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+const require = createRequire(import.meta.url)
+let sentryVitePlugin: undefined | ((options: Record<string, unknown>) => PluginOption)
+
+try {
+  sentryVitePlugin = require('@sentry/vite-plugin').sentryVitePlugin
+} catch {
+  sentryVitePlugin = undefined
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    process.env.SENTRY_AUTH_TOKEN && sentryVitePlugin
+      ? sentryVitePlugin({
+          org: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+          release: {
+            name: process.env.VITE_SENTRY_RELEASE,
+          },
+        })
+      : null,
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -36,7 +58,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: process.env.SENTRY_AUTH_TOKEN ? true : 'hidden',
     rollupOptions: {
       output: {
         manualChunks: {

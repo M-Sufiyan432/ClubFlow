@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
-const { logger } = require('../config/logger');
+const { logger, setLogContext } = require('../config/logger');
 
 // Protect routes - verify JWT token
 exports.protect = async (req, res, next) => {
@@ -11,8 +11,8 @@ exports.protect = async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
   // Check for token in cookies
-  else if (req.cookies.token) {
-    token = req.cookies.token;
+  else if (req.cookies.accessToken || req.cookies.token) {
+    token = req.cookies.accessToken || req.cookies.token;
   }
 
   // Make sure token exists
@@ -37,6 +37,26 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    if (decoded.typ && decoded.typ !== 'access') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token type'
+      });
+    }
+
+    if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== (req.user.tokenVersion || 0)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has been invalidated'
+      });
+    }
+
+    req.user.sessionId = decoded.sessionId;
+
+    setLogContext({
+      userId: req.user._id.toString()
+    });
+
     // Check if user is active
     if (!req.user.isActive) {
       return res.status(401).json({
@@ -47,7 +67,7 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    logger.error(`Auth Middleware Error: ${error.message}`);
+    logger.warn('auth.middleware.failed', { error: error.message });
     
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
@@ -224,8 +244,8 @@ exports.optionalAuth = async (req, res, next) => {
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies.token) {
-    token = req.cookies.token;
+  } else if (req.cookies.accessToken || req.cookies.token) {
+    token = req.cookies.accessToken || req.cookies.token;
   }
 
   if (!token) {
@@ -235,6 +255,12 @@ exports.optionalAuth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select('-password');
+    if (req.user) req.user.sessionId = decoded.sessionId;
+    if (req.user) {
+      setLogContext({
+        userId: req.user._id.toString()
+      });
+    }
     next();
   } catch (error) {
     // Token invalid but continue anyway

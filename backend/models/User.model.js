@@ -86,6 +86,11 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  tokenVersion: {
+    type: Number,
+    default: 0,
+    select: true
+  },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   emailVerificationToken: String,
@@ -123,9 +128,9 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 // Generate JWT token
 userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
+    { id: this._id, email: this.email, role: this.role, tokenVersion: this.tokenVersion || 0, typ: 'access' },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRE || process.env.JWT_EXPIRE || '15m' }
   );
 };
 
